@@ -1,0 +1,27 @@
+services: # service we are building 
+  backend:
+    build:  
+     context:  ./  #context(dir) for create backend must be same as while create image 
+    ports:
+      - "8000:8000"
+    environment:
+      - PORT=8000
+      - DATABASE_URL=postgresssql://postgres:test123@mydb:5432/mydb
+    depends_on:
+      - db
+    volumes:
+      - ./:app
+      - /app/node_modules
+  db:
+    image: postgres:15 #image we are pulling same as node 20 we used
+    container_name: postgress_container
+    restart: always
+    environment:
+      POSTGES_USER: postgres
+      POSTGES_PASSWORD : test123
+      POSTGES_DB : mydb
+    ports:
+      - "5432:5432" #localPort:containerPort
+
+
+#to run docker compose -> docker compose up -- build  this will create docker image with running
