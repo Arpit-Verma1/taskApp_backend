@@ -1,27 +1,34 @@
-services: # service we are building 
+services:
   backend:
     build:  
-     context:  ./  #context(dir) for create backend must be same as while create image 
+      context: ./  # The context (directory) to create the backend must match while creating the image
     ports:
       - "8000:8000"
     environment:
       - PORT=8000
-      - DATABASE_URL=postgresssql://postgres:test123@mydb:5432/mydb
+      - DATABASE_URL=postgresql://postgres:test123@db:5432/mydb # Fixed typo in `postgresql`
     depends_on:
       - db
-    volumes:
-      - ./:app
+    volumes:  # Added so backend changes reflect and create a new image on docker
+      - ./:/app
       - /app/node_modules
+
   db:
-    image: postgres:15 #image we are pulling same as node 20 we used
-    container_name: postgress_container
+    image: postgres:15  # The image we are pulling
+    container_name: postgres_container
     restart: always
     environment:
-      POSTGES_USER: postgres
-      POSTGES_PASSWORD : test123
-      POSTGES_DB : mydb
+      POSTGRES_USER: postgres  # Fixed typo in `POSTGES_USER`
+      POSTGRES_PASSWORD: test123  # Fixed typo in `POSTGES_PASSWORD`
+      POSTGRES_DB: mydb  # Fixed typo in `POSTGES_DB`
     ports:
-      - "5432:5432" #localPort:containerPort
+      - "5432:5432"  # LocalPort:ContainerPort
+    volumes:
+      - postgres_data:/var/lib/postgresql/data  # Persistent storage for database data
+
+volumes:
+  postgres_data :  # Named volume for database persistence
 
 
 #to run docker compose -> docker compose up -- build  this will create docker image with running
+#docker have 4 type of volumes 1) bind 2)named 3)anonyms 4) tmps mount
