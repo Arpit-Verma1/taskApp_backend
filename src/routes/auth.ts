@@ -13,6 +13,12 @@ interface SignupBody {
 }
 
 
+interface LoginBody {
+    name: string;
+    email: string;
+    password: string;
+}
+
 authRouter.post("/signup", async (req: Request<{}, {}, SignupBody>, res: Response) => {
     try {
         // Get request body
@@ -43,6 +49,33 @@ authRouter.post("/signup", async (req: Request<{}, {}, SignupBody>, res: Respons
         res.status(500).json({ error:"internal server error."});
     }
 });
+
+
+authRouter.post("/login", async (req: Request<{}, {}, LoginBody>, res: Response) => {
+    try {
+        // Get request body
+        console.log(req.body)
+        const { email, password } = req.body;
+
+        // Check if user already exists
+        const [existingUser] = await db.select().from(users).where(eq(users.email, email));
+        if (!existingUser) {
+            res.status(400).json({ msg: "User with this email does not exists!" });
+            return ;
+        }
+
+        // Hash the password
+        const isMatch = await bcryptjs.compare(password, existingUser.password);
+        if(!isMatch) {
+            res.status(400).json({msg : "Incorrect password"});
+            return ;
+        }
+         res.json(existingUser);
+    } catch (e) {
+        res.status(500).json({ error:"internal server error."});
+    }
+});
+
 
 
 
