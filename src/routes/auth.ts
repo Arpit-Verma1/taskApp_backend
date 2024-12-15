@@ -3,6 +3,7 @@ import { db } from "../db";
 import { NewUser, users } from "../db/schema";
 import { eq } from "drizzle-orm";
 import bcryptjs from "bcryptjs";
+import jwt from "jsonwebtoken";
 
 const authRouter = Router();
 
@@ -46,7 +47,7 @@ authRouter.post("/signup", async (req: Request<{}, {}, SignupBody>, res: Respons
         console.log(user)
         res.status(201).json(user);
     } catch (e) {
-        res.status(500).json({ error:"internal server error."});
+        res.status(500).json({ error: "internal server error." });
     }
 });
 
@@ -61,27 +62,64 @@ authRouter.post("/login", async (req: Request<{}, {}, LoginBody>, res: Response)
         const [existingUser] = await db.select().from(users).where(eq(users.email, email));
         if (!existingUser) {
             res.status(400).json({ msg: "User with this email does not exists!" });
-            return ;
+            return;
         }
 
-        // Hash the password
+        // check password is mathced
         const isMatch = await bcryptjs.compare(password, existingUser.password);
-        if(!isMatch) {
-            res.status(400).json({msg : "Incorrect password"});
-            return ;
+        if (!isMatch) {
+            res.status(400).json({ msg: "Incorrect password" });
+            return;
         }
-         res.json(existingUser);
+
+        // share json web token to user persist login 
+        const token = jwt.sign({ id: existingUser.id }, "paswordKey")
+
+        res.json({ token, ...existingUser });
     } catch (e) {
-        res.status(500).json({ error:"internal server error."});
+        res.status(500).json({ error: "internal server error." });
     }
 });
 
 
+authRouter.post("/tokenIsValid", async (req, res) => {
+    try {
+        //get the header
+
+        const token = req.header("x-auth-token");
+
+        if (!token) {
+            console.log("token");
+            res.json(false);
+            return;
+        }
+
+        // verify if token is valid
+        const verified = jwt.verify(token, "paswordKey");
 
 
+        if (!verified) {
+            res.json(false);
+            return;
+        }
+        // get the user data if the token is valid
+        const verifiedToken = verified as { id: string };
 
-authRouter.get("/me", (req: Request, res: Response) => {
-    res.send("Hi from auth");
-});
+
+        const [user] = await db.select().from(users).where(eq(users.id, verifiedToken.id))
+
+        if (!user) {
+
+            res.json(false)
+            return;
+        }
+        res.json(true)
+
+
+    }
+    catch (e) {
+        res.status(500).json(false)
+    }
+})
 
 export default authRouter;
