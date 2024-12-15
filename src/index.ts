@@ -1,12 +1,11 @@
 import express from "express";
-import authrouter from "./routes/auth";
 import authRouter from "./routes/auth";
 
 const app = express()
 
+app.use(express.json()) //only forward json releated routes 
 app.use("/auth", authRouter); 
 //bind authrouter to our app
-app.use(express.json()) //only forward json releated routes 
 
 
 app.get("/", (req,res)=> {

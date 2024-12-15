@@ -12,16 +12,20 @@ interface SignupBody {
     password: string;
 }
 
+
 authRouter.post("/signup", async (req: Request<{}, {}, SignupBody>, res: Response) => {
     try {
         // Get request body
+        console.log(req.body)
         const { name, email, password } = req.body;
 
         // Check if user already exists
+        console.log(name);
         const existingUser = await db.select().from(users).where(eq(users.email, email));
         if (existingUser.length) {
             res.status(400).json({ msg: "User with the same email already exists!" });
         }
+        console.log("hasing password");
 
         // Hash the password
         const hashedPassword = await bcryptjs.hash(password, 8);
@@ -33,11 +37,15 @@ authRouter.post("/signup", async (req: Request<{}, {}, SignupBody>, res: Respons
 
         // Insert new user into the database and return the created user
         const [user] = await db.insert(users).values(newUser).returning();
+        console.log(user)
         res.status(201).json(user);
     } catch (e) {
-        res.status(500).json({ error:e });
+        res.status(500).json({ error:"internal server error."});
     }
 });
+
+
+
 
 authRouter.get("/me", (req: Request, res: Response) => {
     res.send("Hi from auth");
