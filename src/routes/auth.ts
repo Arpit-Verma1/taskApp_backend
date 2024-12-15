@@ -4,6 +4,7 @@ import { NewUser, users } from "../db/schema";
 import { eq } from "drizzle-orm";
 import bcryptjs from "bcryptjs";
 import jwt from "jsonwebtoken";
+import { auth, AuthRequest } from "../middleware/auth";
 
 const authRouter = Router();
 
@@ -23,16 +24,20 @@ interface LoginBody {
 authRouter.post("/signup", async (req: Request<{}, {}, SignupBody>, res: Response) => {
     try {
         // Get request body
-        console.log(req.body)
+
         const { name, email, password } = req.body;
 
         // Check if user already exists
-        console.log(name);
+
         const existingUser = await db.select().from(users).where(eq(users.email, email));
         if (existingUser.length) {
-            res.status(400).json({ msg: "User with the same email already exists!" });
+            res.status(400).json({
+                msg: "User with the same email already exists!",
+                user: existingUser
+            });
+            return;
         }
-        console.log("hasing password");
+
 
         // Hash the password
         const hashedPassword = await bcryptjs.hash(password, 8);
@@ -44,7 +49,7 @@ authRouter.post("/signup", async (req: Request<{}, {}, SignupBody>, res: Respons
 
         // Insert new user into the database and return the created user
         const [user] = await db.insert(users).values(newUser).returning();
-        console.log(user)
+
         res.status(201).json(user);
     } catch (e) {
         res.status(500).json({ error: "internal server error." });
@@ -55,13 +60,17 @@ authRouter.post("/signup", async (req: Request<{}, {}, SignupBody>, res: Respons
 authRouter.post("/login", async (req: Request<{}, {}, LoginBody>, res: Response) => {
     try {
         // Get request body
-        console.log(req.body)
+
         const { email, password } = req.body;
 
         // Check if user already exists
         const [existingUser] = await db.select().from(users).where(eq(users.email, email));
         if (!existingUser) {
-            res.status(400).json({ msg: "User with this email does not exists!" });
+            res.status(400).json({
+                msg: "User with this email does not exists!",
+
+
+            });
             return;
         }
 
@@ -89,7 +98,7 @@ authRouter.post("/tokenIsValid", async (req, res) => {
         const token = req.header("x-auth-token");
 
         if (!token) {
-            console.log("token");
+
             res.json(false);
             return;
         }
@@ -119,6 +128,20 @@ authRouter.post("/tokenIsValid", async (req, res) => {
     }
     catch (e) {
         res.status(500).json(false)
+    }
+})
+
+authRouter.get("/", auth, async (req: AuthRequest, res) => {
+    try {
+        if (!req.user) {
+            res.status(401).json({ msg: "user is not found!" });
+            return;
+        }
+        const [user] = await db.select().from(users).where(eq(users.id, req.user));
+        res.json({ ...user, token: req.token })
+    }
+    catch (e) {
+
     }
 })
 
