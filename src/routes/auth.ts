@@ -32,7 +32,7 @@ authRouter.post("/signup", async (req: Request<{}, {}, SignupBody>, res: Respons
         const existingUser = await db.select().from(users).where(eq(users.email, email));
         if (existingUser.length) {
             res.status(400).json({
-                msg: "User with the same email already exists!",
+                error: "User with the same email already exists!",
                 user: existingUser
             });
             return;
@@ -67,7 +67,7 @@ authRouter.post("/login", async (req: Request<{}, {}, LoginBody>, res: Response)
         const [existingUser] = await db.select().from(users).where(eq(users.email, email));
         if (!existingUser) {
             res.status(400).json({
-                msg: "User with this email does not exists!",
+                error: "User with this email does not exists!",
 
 
             });
@@ -77,7 +77,7 @@ authRouter.post("/login", async (req: Request<{}, {}, LoginBody>, res: Response)
         // check password is mathced
         const isMatch = await bcryptjs.compare(password, existingUser.password);
         if (!isMatch) {
-            res.status(400).json({ msg: "Incorrect password" });
+            res.status(400).json({ error: "Incorrect password" });
             return;
         }
 
@@ -134,7 +134,7 @@ authRouter.post("/tokenIsValid", async (req, res) => {
 authRouter.get("/", auth, async (req: AuthRequest, res) => {
     try {
         if (!req.user) {
-            res.status(401).json({ msg: "user is not found!" });
+            res.status(401).json({ error: "user is not found!" });
             return;
         }
         const [user] = await db.select().from(users).where(eq(users.id, req.user));
