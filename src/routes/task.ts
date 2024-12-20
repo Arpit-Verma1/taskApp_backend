@@ -66,3 +66,23 @@ taskRouter.delete("/", auth, async (req: AuthRequest, res) => {
         res.status(500).json({ error: e })
     }
 })
+
+taskRouter.post("/sync", auth, async (req: AuthRequest, res) => {
+    //    const { title, description, hexColor, dueAt } = req.body;
+    try {
+        const filteredTask: NewTask[] = [];
+        console.log(req.body); // Log the incoming request body for debugging
+
+        const taskList = req.body;
+        for (let t of taskList) {
+            t = { ...t, dueAt: new Date(t.dueAt), createdAt: new Date(t.createdAt), updatedAt: new Date(t.updatedAt), uid: req.user };
+            filteredTask.push(t);
+        }
+        const pushedTasks = await db.insert(tasks).values(filteredTask).returning;
+        res.status(201).json(pushedTasks);
+
+    } catch (e) {
+        console.log(e);
+        res.status(500).json({ error: e })
+    }
+})
